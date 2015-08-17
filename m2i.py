@@ -2,6 +2,8 @@
 
 import argparse
 import getpass
+import json
+import requests
 import signal
 import sys
 import telnetlib
@@ -9,17 +11,23 @@ import threading
 
 # Parse argument list
 parser = argparse.ArgumentParser()
-parser.add_argument('--memcached-host', dest="memcached_host", type=str, nargs="?", default="localhost")
-parser.add_argument('--memcached-port', dest="memcached_port", type=int, nargs="?", default=11211)
-parser.add_argument('--influxdb-host', dest="influxdb_host", type=str, nargs="?", default="localhost")
-parser.add_argument('--influxdb-port', dest="influxdb_port", type=int, nargs="?", default=8086)
-parser.add_argument('--stats-interval-seconds', dest="stats_interval_seconds", nargs="?", default=1)
+parser.add_argument("--memcached-host", dest="memcached_host", type=str, nargs="?", default="localhost")
+parser.add_argument("--memcached-port", dest="memcached_port", type=int, nargs="?", default=11211)
+parser.add_argument("--influxdb-host", dest="influxdb_host", type=str, nargs="?", default="localhost")
+parser.add_argument("--influxdb-port", dest="influxdb_port", type=int, nargs="?", default=8086)
+parser.add_argument("--influxdb-db-name", dest="influxdb_db_name", required=True, type=str)
+parser.add_argument("--influxdb-user", dest="influxdb_user", default='root', type=str)
+parser.add_argument("--influxdb-password", dest="influxdb_password", default='root', type=str)
+parser.add_argument("--stats-interval-seconds", dest="stats_interval_seconds", nargs="?", default=1)
 args = parser.parse_args()
 
 memcached_host = args.memcached_host
 memcached_port = args.memcached_port
 influxdb_host = args.influxdb_host
 influxdb_port = args.influxdb_port
+influxdb_db_name = args.influxdb_db_name
+influxdb_user = args.influxdb_user
+influxdb_password = args.influxdb_password
 stats_interval_seconds = args.stats_interval_seconds
 
 print """
@@ -36,6 +44,13 @@ stats_interval_seconds : {}
     influxdb_host,
     influxdb_port,
     stats_interval_seconds)
+
+influxdb_endpoint = "http://{}:{}/db/{}/series?u={}&p={}".format(
+    influxdb_host,
+    influxdb_port,
+    influxdb_db_name,
+    influxdb_user,
+    influxdb_password)
 
 # Global state
 global_time = 0
@@ -103,11 +118,31 @@ def extract_rps(raw_stats):
     return requests_per_second
 
 def post_to_influxdb(rps):
-    global memcached_host, memcached_port
+    global influxdb_endpoint
 
-    print "TODO: post to influxdb at [{}:{}]".format(
-        memcached_host, memcached_port)
-    # TODO
+    print "Posting metrics to influxdb"
+    samples = []
+
+    rps_sample = {
+        "name": "memcached_rps",
+        "columns": [ "value" ],
+        "points": [
+            [rps]
+        ]
+    }
+
+    samples.append(rps_sample)
+
+    request_json = json.dumps(samples)
+
+    response = requests.post(url=influxdb_endpoint,
+        data=request_json,
+        headers={'Content-Type': 'application/octet-stream'})
+
+    if response.status_code != 200:
+        print "Received unexpected response [{}]: {}".format(
+            response.status_code,
+            response.text)
 
 def collect_sample():
     print "Requesting stats from memcached at [{}:{}]".format(
