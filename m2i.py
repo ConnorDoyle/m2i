@@ -73,12 +73,18 @@ def extract_rps(raw_stats):
     for r_stat in request_stats:
         total_requests += int(stats[r_stat])
 
+    sample_time = int(stats["time"])
+
     # Copy previous values
     prev_time = global_time
     prev_total_requests = global_total_requests
 
+    # Skip this iteration early if the sample has the previous timestamp
+    if prev_time == sample_time:
+        return None
+
     # Save current values
-    global_time = int(stats["time"])
+    global_time = sample_time
     global_total_requests = total_requests
 
     # Skip sample computation if this is the priming sample
@@ -90,12 +96,11 @@ def extract_rps(raw_stats):
     delta_time = global_time - prev_time
 
     # Throw away nonsense values
-    if delta_commands < 0 or delta_time <= 0:
+    if delta_commands < 0 or delta_time < 0:
         return None
 
-    requests_per_ms = delta_commands / delta_time
-
-    return requests_per_ms * 1000
+    requests_per_second = delta_commands / delta_time
+    return requests_per_second
 
 def post_to_influxdb(rps):
     global memcached_host, memcached_port
