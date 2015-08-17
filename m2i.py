@@ -13,6 +13,7 @@ import threading
 parser = argparse.ArgumentParser()
 parser.add_argument("--memcached-host", dest="memcached_host", type=str, nargs="?", default="localhost")
 parser.add_argument("--memcached-port", dest="memcached_port", type=int, nargs="?", default=11211)
+parser.add_argument("--memcached-timeout-seconds", dest="memcached_timeout_seconds", type=int, nargs="?", default=5)
 parser.add_argument("--influxdb-host", dest="influxdb_host", type=str, nargs="?", default="localhost")
 parser.add_argument("--influxdb-port", dest="influxdb_port", type=int, nargs="?", default=8086)
 parser.add_argument("--influxdb-db-name", dest="influxdb_db_name", required=True, type=str)
@@ -23,6 +24,7 @@ args = parser.parse_args()
 
 memcached_host = args.memcached_host
 memcached_port = args.memcached_port
+memcached_timeout_seconds = args.memcached_timeout_seconds
 influxdb_host = args.influxdb_host
 influxdb_port = args.influxdb_port
 influxdb_db_name = args.influxdb_db_name
@@ -30,19 +32,19 @@ influxdb_user = args.influxdb_user
 influxdb_password = args.influxdb_password
 stats_interval_seconds = args.stats_interval_seconds
 
-MEMCACHED_TIMEOUT_SECONDS = 5
-
 print """
 m2i.py
 
-memcached_host         : {}
-memcached_port         : {}
-influxdb_host          : {}
-influxdb_port          : {}
-stats_interval_seconds : {}
+memcached_host            : {}
+memcached_port            : {}
+memcached_timeout_seconds : {}
+influxdb_host             : {}
+influxdb_port             : {}
+stats_interval_seconds    : {}
 """.format(
     memcached_host,
     memcached_port,
+    memcached_timeout_seconds,
     influxdb_host,
     influxdb_port,
     stats_interval_seconds)
@@ -59,12 +61,12 @@ global_time = 0
 global_total_requests = 0
 
 def get_raw_stats():
-    global memcached_host, memcached_port
+    global memcached_host, memcached_port, memcached_timeout_seconds
 
     try:
         tn = telnetlib.Telnet(memcached_host,
             memcached_port,
-            MEMCACHED_TIMEOUT_SECONDS)
+            memcached_timeout_seconds)
         tn.write("stats\n")
         tn.write("quit\n")
         raw = tn.read_all()
