@@ -30,6 +30,8 @@ influxdb_user = args.influxdb_user
 influxdb_password = args.influxdb_password
 stats_interval_seconds = args.stats_interval_seconds
 
+MEMCACHED_TIMEOUT_SECONDS = 5
+
 print """
 m2i.py
 
@@ -59,12 +61,19 @@ global_total_requests = 0
 def get_raw_stats():
     global memcached_host, memcached_port
 
-    tn = telnetlib.Telnet(memcached_host, memcached_port)
-    tn.write("stats\n")
-    tn.write("quit\n")
-    raw = tn.read_all()
-    tn.close()
-    return raw
+    try:
+        tn = telnetlib.Telnet(memcached_host,
+            memcached_port,
+            MEMCACHED_TIMEOUT_SECONDS)
+        tn.write("stats\n")
+        tn.write("quit\n")
+        raw = tn.read_all()
+        tn.close()
+        return raw
+    except:
+        print "Failed to connect to memcached at [{}:{}]".format(
+            memcached_host, memcached_port)
+        return None
 
 def parse_raw_stats(raw_stats):
     stats = {}
@@ -164,6 +173,9 @@ def collect_sample():
         memcached_host,
         memcached_port)
     raw_stats = get_raw_stats()
+    if raw_stats is None:
+        print "Skipping requests-per-second report for this sample"
+        return
     rps = extract_rps(raw_stats)
     if rps is None:
         print "Skipping requests-per-second report for this sample"
