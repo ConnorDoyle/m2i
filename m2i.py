@@ -75,6 +75,21 @@ def parse_raw_stats(raw_stats):
             stat_name = parts[1]
             stat_value = parts[2]
             stats[stat_name] = stat_value
+
+    # Available statistics:
+    # =====================
+    #
+    # pid uptime time version libevent pointer_size rusage_user rusage_system
+    # curr_connections total_connections connection_structures reserved_fds
+    # cmd_get cmd_set cmd_flush cmd_touch get_hits get_misses delete_misses
+    # delete_hits incr_misses incr_hits decr_misses decr_hits cas_misses
+    # cas_hits cas_badval touch_hits touch_misses auth_cmds auth_errors
+    # bytes_read bytes_written limit_maxbytes accepting_conns
+    # listen_disabled_num threads conn_yields hash_power_level hash_bytes
+    # hash_is_expanding malloc_fails bytes curr_items total_items
+    # expired_unfetched evicted_unfetched evictions reclaimed
+    # crawler_reclaimed crawler_items_checked lrutail_reflocked
+
     return stats
 
 def extract_rps(raw_stats):
