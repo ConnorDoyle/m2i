@@ -3,11 +3,14 @@
 ## Usage
 
 ```
-$ ./m2i --help
+$ ./m2i.py --help
 usage: m2i.py [-h] [--memcached-host [MEMCACHED_HOST]]
               [--memcached-port [MEMCACHED_PORT]]
+              [--memcached-timeout-seconds [MEMCACHED_TIMEOUT_SECONDS]]
               [--influxdb-host [INFLUXDB_HOST]]
-              [--influxdb-port [INFLUXDB_PORT]]
+              [--influxdb-port [INFLUXDB_PORT]] --influxdb-db-name
+              INFLUXDB_DB_NAME [--influxdb-user INFLUXDB_USER]
+              [--influxdb-password INFLUXDB_PASSWORD]
               [--stats-interval-seconds [STATS_INTERVAL_SECONDS]]
 ```
 
